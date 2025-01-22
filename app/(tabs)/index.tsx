@@ -1,74 +1,106 @@
-import { Image, StyleSheet, Platform } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-
+import {
+    StyleSheet,
+    View,
+    Text,
+    TouchableOpacity,
+    ToastAndroid
+} from 'react-native';
+import React, {useState} from "react";
+import {StatusBar} from "expo-status-bar";
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+    const [backgroundColor, setBackgroundColor] = useState('#FFFFFF');
+    const [textColor, setTextColor] = useState('#000000');
+    const generateRandomColor = () => {
+        const red = Math.floor(Math.random() * 256);
+        const green = Math.floor(Math.random() * 256);
+        const blue = Math.floor(Math.random() * 256);
+        return `rgb(${red}, ${green}, ${blue})`;
+    }
+    const getOppositeColor = (rgbString: string) => {
+        const regex = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/;
+        const result = rgbString.match(regex);
+        // In case input was invalid or didn't match the expected pattern
+        if (!result) {
+            // default fallback
+            return 'rgb(255, 255, 255)';
+        }
+        // Extract channels
+        const red = parseInt(result[1], 10);
+        const green = parseInt(result[2], 10);
+        const blue = parseInt(result[3], 10);
+
+        // Invert each channel
+        const invertedRed = 255 - red;
+        const invertedGreen = 255 - green;
+        const invertedBlue = 255 - blue;
+
+        return `rgb(${invertedRed}, ${invertedGreen}, ${invertedBlue})`;
+    }
+    const handleScreenPress = () => {
+        const newColor = generateRandomColor();
+        const newTextColor = getOppositeColor(newColor);
+        setBackgroundColor(newColor);
+        setTextColor(newTextColor);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    }
+    const showToast = () => {
+        ToastAndroid.show('Color copied to clipboard!', ToastAndroid.SHORT);
+    };
+    const handleCopyToClipboard = async () => {
+        await Clipboard.getStringAsync()
+            .then(() => {
+                showToast();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            })
+    }
+
+    return (
+        <TouchableOpacity style={[styles.screenContainer, {backgroundColor}]} activeOpacity={0.8} onPress={handleScreenPress}>
+            <StatusBar style="dark"/>
+            <View style={styles.textContainer}>
+                <Text style={[styles.helloText, {color: textColor}]}>Hello there</Text>
+                <Text style={[styles.text, {color: textColor}]}>Press the background to change color</Text>
+                <Text style={[styles.text, {color: textColor}]}>Press the color text to copy to clipboard</Text>
+                <TouchableOpacity style={styles.colorsContainer} activeOpacity={0.6} onPress={handleCopyToClipboard}>
+                    <Text style={[styles.text, {color: textColor}]}>Background Color:</Text>
+                    <Text style={[styles.text, {color: textColor}]}>
+                        {backgroundColor}
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.colorsContainer} activeOpacity={0.6} onPress={handleCopyToClipboard}>
+                    <Text style={[styles.text, {color: textColor}]}>Text Color:</Text>
+                    <Text style={[styles.text, {color: textColor}]}>
+                        {textColor}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        </TouchableOpacity>
+    );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+    screenContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    textContainer: {
+        alignItems: 'center'
+    },
+    helloText: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        marginBottom: 8,
+    },
+    text: {
+        fontSize: 18,
+    },
+    colorsContainer: {
+        marginTop:10,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center'
+    }
 });
